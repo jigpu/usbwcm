@@ -384,9 +384,9 @@ static void
 uwacom_pad_events_intuos(usbwcm_state_t *usbwcmp, uint8_t *packet)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
-	int b0, b1, b2, b3, b4, b5, b6, b7;
+	int b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17;
 	int rx, ry, prox;
-	int b8, whl, rot;
+	int whl, rot;
 
 	switch (sc->sc_type->protocol) {
 	case INTUOS4L:
@@ -425,16 +425,42 @@ uwacom_pad_events_intuos(usbwcm_state_t *usbwcmp, uint8_t *packet)
 		break;
 
 	default:
-		b0 = PACKET_BIT(5, 0);
-		b1 = PACKET_BIT(5, 1);
-		b2 = PACKET_BIT(5, 2);
-		b3 = PACKET_BIT(5, 3);
-		b4 = PACKET_BIT(6, 0);
-		b5 = PACKET_BIT(6, 1);
-		b6 = PACKET_BIT(6, 2);
-		b7 = PACKET_BIT(6, 3);
+		if (sc->sc_type->protocol == CINTIQUX2) {
+			b0 = PACKET_BIT(5, 0);
+			b1 = PACKET_BIT(6, 0);
+			b2 = PACKET_BIT(6, 1);
+			b3 = PACKET_BIT(6, 2);
+			b4 = PACKET_BIT(6, 3);
+			b5 = PACKET_BIT(6, 4);
+			b6 = PACKET_BIT(6, 5);
+			b7 = PACKET_BIT(6, 6);
+			b8 = PACKET_BIT(6, 7);
+
+			b9  = PACKET_BIT(7, 0);
+			b10 = PACKET_BIT(8, 0);
+			b11 = PACKET_BIT(8, 1);
+			b12 = PACKET_BIT(8, 2);
+			b13 = PACKET_BIT(8, 3);
+			b14 = PACKET_BIT(8, 4);
+			b15 = PACKET_BIT(8, 5);
+			b16 = PACKET_BIT(8, 6);
+			b17 = PACKET_BIT(8, 7);
+			prox = b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7 | b8 | b9 | b10 | b11 | b12 | b13 | b14 | b15 | b16 | b17;
+		}
+		else {
+			b0 = PACKET_BIT(5, 0);
+			b1 = PACKET_BIT(5, 1);
+			b2 = PACKET_BIT(5, 2);
+			b3 = PACKET_BIT(5, 3);
+			b4 = PACKET_BIT(6, 0);
+			b5 = PACKET_BIT(6, 1);
+			b6 = PACKET_BIT(6, 2);
+			b7 = PACKET_BIT(6, 3);
+			prox = b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7;
+		}
 		rx = PACKET_BITS(2, 0, 13);
 		ry = PACKET_BITS(4, 0, 13);
+		prox |= rx | ry;
 
 		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_0, b0);
 		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_1, b1);
@@ -444,10 +470,21 @@ uwacom_pad_events_intuos(usbwcm_state_t *usbwcmp, uint8_t *packet)
 		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_5, b5);
 		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_6, b6);
 		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_7, b7);
+		if (sc->sc_type->protocol == CINTIQUX2) {
+			uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_8, b8);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_9, b9);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_BASE, b10);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_BASE2, b11);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_A, b12);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_B, b13);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_C, b14);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_X, b15);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_Y, b16);
+			uwacom_event(usbwcmp, EVT_BTN, BTN_Z, b17);
+		}
 		uwacom_event(usbwcmp, EVT_ABS, ABS_RX, rx);
 		uwacom_event(usbwcmp, EVT_ABS, ABS_RY, ry);
 
-		prox = b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7 | rx | ry;
 		uwacom_tool_events_intuos(usbwcmp, 1, prox);
 
 		break;
@@ -491,6 +528,13 @@ usbwcm_input_intuos(usbwcm_state_t *usbwcmp, mblk_t *mp)
 				    sc->sc_tool_id[0]);
 				sc->sc_tool[0] = BTN_TOOL_PEN;
 			}
+
+			/* older I4 styli don't work with new Cintiqs */
+			if (PACKET_BIT(7, 0) && sc->sc_type->protocol == CINTIQUX2)
+				USB_DPRINTF_L1(PRINT_MASK_ALL,
+				    usbwcm_log_handle,
+				    "incompatible tool ID %03x seen\n",
+				    sc->sc_tool_id[0]);
 			break;
 
 		/* Tool leaving proximity */
@@ -743,6 +787,21 @@ uwacom_init_intuos4(usbwcm_state_t *usbwcmp)
 	uwacom_init_abs(usbwcmp, ABS_Z, -900,  899, 0, 0);
 }
 static void
+uwacom_init_cintiq21ux2(usbwcm_state_t *usbwcmp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_9);
+	BM_SET_BIT(sc->sc_bm[1], BTN_BASE);
+	BM_SET_BIT(sc->sc_bm[1], BTN_BASE2);
+	BM_SET_BIT(sc->sc_bm[1], BTN_A);
+	BM_SET_BIT(sc->sc_bm[1], BTN_B);
+	BM_SET_BIT(sc->sc_bm[1], BTN_C);
+	BM_SET_BIT(sc->sc_bm[1], BTN_X);
+	BM_SET_BIT(sc->sc_bm[1], BTN_Y);
+	BM_SET_BIT(sc->sc_bm[1], BTN_Z);
+}
+static void
 uwacom_init_intuos4_large(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
@@ -809,6 +868,9 @@ uwacom_init(usbwcm_state_t *usbwcmp)
 			uwacom_init_intuos(usbwcmp);
 			break;
 
+		case CINTIQUX2:
+			uwacom_init_cintiq21ux2(usbwcmp);
+		/*FALLTHRU*/
 		case INTUOS4L:
 			uwacom_init_intuos4_large(usbwcmp);
 		/*FALLTHRU*/
@@ -1408,6 +1470,7 @@ usbwcm_input(usbwcm_state_t *usbwcmp, mblk_t *mp)
 	case INTUOS4S:
 	case INTUOS4L:
 	case CINTIQ:
+	case CINTIQUX2:
 		usbwcm_input_intuos(usbwcmp, mp);
 		break;
 

@@ -136,12 +136,21 @@ struct event_input {
 #define	BTN_MISC_6			0x0106
 #define	BTN_MISC_7			0x0107
 #define	BTN_MISC_8			0x0108
+#define	BTN_MISC_9			0x0109
 
 #define	BTN_LEFT			0x0110
 #define	BTN_RIGHT			0x0111
 #define	BTN_MIDDLE			0x0112
 #define	BTN_SIDE			0x0113
 #define	BTN_EXTRA			0x0114
+#define	BTN_BASE			0x0126
+#define	BTN_BASE2			0x0127
+#define	BTN_A				0x0130
+#define	BTN_B				0x0131
+#define	BTN_C				0x0132
+#define	BTN_X				0x0133
+#define	BTN_Y				0x0134
+#define	BTN_Z				0x0135
 #define	BTN_TOOL_PEN			0x0140
 #define	BTN_TOOL_ERASER			0x0141
 #define	BTN_TOOL_PAD			0x0145
@@ -210,6 +219,7 @@ struct event_input {
 #define	USB_PRODUCT_WACOM_INTUOS4_8X13		0x00ba
 #define	USB_PRODUCT_WACOM_INTUOS4_12X19		0x00bb
 
+#define	USB_PRODUCT_WACOM_CINTIQ_21UX2		0x00cc
 #define	USB_PRODUCT_WACOM_DTU_2231		0x00ce
 
 #define	TOOL_ID_PEN	0x0002
@@ -243,6 +253,7 @@ enum uwacom_protocol {
 	INTUOS4S,
 	INTUOS4L,
 	CINTIQ,
+	CINTIQUX2,
 
 	/* DTU family */
 	DTU
@@ -266,6 +277,7 @@ static const struct uwacom_protocol_type uwacom_protocols[] = {
 	{ 8, 63},
 	{ 8, 63},
 	{ 9, 63},
+	{10, 63},
 	{10, 63},
 	{10, 63},
 	{10, 63},
@@ -362,6 +374,10 @@ static const struct uwacom_type uwacom_devs[] = {
 	{
 		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_CINTIQ_21UX},
 		CINTIQ, 87200, 65600, 1023
+	},
+	{
+		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_CINTIQ_21UX2},
+		CINTIQUX2, 87200, 65600, 2047
 	},
 	{
 		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_VOLITO},
