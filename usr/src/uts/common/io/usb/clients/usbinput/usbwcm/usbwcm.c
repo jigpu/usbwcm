@@ -560,6 +560,85 @@ usbwcm_input_intuos(usbwcm_state_t *usbwcmp, mblk_t *mp)
 }
 
 static void
+uwacom_pos_events_dtu(usbwcm_state_t *usbwcmp, int x, int y)
+{
+	uwacom_event(usbwcmp, EVT_ABS, ABS_X, x);
+	uwacom_event(usbwcmp, EVT_ABS, ABS_Y, y);
+}
+
+static void
+uwacom_pen_events_dtu(usbwcm_state_t *usbwcmp, int prs, int stl1, int stl2)
+{
+	uwacom_event(usbwcmp, EVT_ABS, ABS_PRESSURE, prs);
+	uwacom_event(usbwcmp, EVT_BTN, BTN_TIP, prs);
+	uwacom_event(usbwcmp, EVT_BTN, BTN_STYLUS_1, stl1);
+	uwacom_event(usbwcmp, EVT_BTN, BTN_STYLUS_2, stl2);
+}
+
+static void
+uwacom_tool_events_dtu(usbwcm_state_t *usbwcmp, int idx, int proximity)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+
+	uwacom_event(usbwcmp, EVT_BTN, sc->sc_tool[idx], proximity);
+	uwacom_event(usbwcmp, EVT_ABS, ABS_MISC, sc->sc_tool_id[idx]);
+	if (sc->sc_serial[idx]) {
+		uwacom_event(usbwcmp, EVT_MSC, MSC_SERIAL, sc->sc_serial[idx]);
+	}
+
+	uwacom_event(usbwcmp, EVT_SYN, SYN_REPORT, 0);
+}
+
+static void
+usbwcm_input_dtu(usbwcm_state_t *usbwcmp, mblk_t *mp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+	uint8_t *packet = mp->b_rptr;
+
+	switch (PACKET_BITS(0, 0, 8)) {
+	case 0x02:
+		if (PACKET_BIT(1,5)) { /* In proximity */
+			if (PACKET_BIT(1,3) || PACKET_BIT(1,2)) {
+				sc->sc_tool[0]    = BTN_TOOL_ERASER;
+				sc->sc_tool_id[0] = TOOL_ID_ERASER;
+			}
+			else {
+				sc->sc_tool[0]    = BTN_TOOL_PEN;
+				sc->sc_tool_id[0] = TOOL_ID_PEN;
+			}
+
+			uwacom_pen_events_dtu(usbwcmp,
+			    (PACKET_BIT(7,0) << 8) | PACKET_BITS(6,0,8),
+			    PACKET_BIT(1,1),
+			    PACKET_BIT(1,4)
+			);
+
+			uwacom_pos_events_dtu(usbwcmp,
+			    (PACKET_BITS(3,0,8) << 8) | PACKET_BITS(2,0,8),
+			    (PACKET_BITS(5,0,8) << 8) | PACKET_BITS(4,0,8)
+			);
+
+			uwacom_tool_events_dtu(usbwcmp,0,1);
+		}
+		else if (sc->sc_tool[0]) { /* Not in prox; tool set */
+			uwacom_pos_events_dtu(usbwcmp, 0, 0);
+
+			uwacom_pen_events_dtu(usbwcmp, 0, 0, 0);
+
+			sc->sc_tool_id[0] = 0;
+			uwacom_tool_events_dtu(usbwcmp, 0, 0);
+		}
+		break;
+
+	default:
+		USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+		    "unknown report type %02x received\n",
+		    PACKET_BITS(0, 0, 8));
+		break;
+	}
+}
+
+static void
 uwacom_init_abs(usbwcm_state_t *usbwcmp, int axis, int32_t min, int32_t max,
     int32_t fuzz, int32_t flat)
 {
@@ -743,6 +822,7 @@ uwacom_init(usbwcm_state_t *usbwcmp)
 		case GRAPHIRE4:
 			uwacom_init_graphire4(usbwcmp);
 		/*FALLTHRU*/
+		case DTU:
 		case GRAPHIRE:
 			break;
 	}
@@ -1329,6 +1409,10 @@ usbwcm_input(usbwcm_state_t *usbwcmp, mblk_t *mp)
 	case INTUOS4L:
 	case CINTIQ:
 		usbwcm_input_intuos(usbwcmp, mp);
+		break;
+
+	case DTU:
+		usbwcm_input_dtu(usbwcmp, mp);
 		break;
 	}
 }
