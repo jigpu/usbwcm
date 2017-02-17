@@ -683,6 +683,109 @@ usbwcm_input_dtu(usbwcm_state_t *usbwcmp, mblk_t *mp)
 }
 
 static void
+uwacom_pad_events_dtu_b(usbwcm_state_t *usbwcmp, mblk_t *mp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+	uint8_t *packet = mp->b_rptr;
+	int btn_mask, btn_count;
+	int i;
+
+	if (PACKET_BITS(0, 0, 8) != 0x0c)
+		return;
+
+	if (sc->sc_id.product == USB_PRODUCT_WACOM_DTK_2241) {
+		btn_count = 5;
+		btn_mask = PACKET_BITS(6, 0, 5);
+	}
+	else if (sc->sc_id.product == USB_PRODUCT_WACOM_DTH_2242_PEN) {
+		btn_count = 6;
+		btn_mask = PACKET_BITS(6, 0, 6);
+	}
+	else {
+		USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+		    "unable to handle pad report from %04x:%04x\n",
+		    sc->sc_id.vendor, sc->sc_id.product);
+	}
+
+	for (i = 0; i < btn_count; i++) {
+		uwacom_event(usbwcmp, EVT_BTN, BTN_MISC_0 + i,
+		    !!(btn_mask & (1 << i)));
+	}
+
+	uwacom_tool_events_dtu(usbwcmp, 1, btn_count);
+}
+
+static void
+usbwcm_input_dtu_b(usbwcm_state_t *usbwcmp, mblk_t *mp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+	uint8_t *packet = mp->b_rptr;
+
+	switch (PACKET_BITS(0, 0, 8)) {
+	case 0x02:
+		switch (PACKET_BITS(1, 5, 3)) {
+		/* Tool entering proximity */
+		case 0x06:
+			sc->sc_tool_id[0] = PACKET_BITS(3, 4, 12);
+			sc->sc_serial[0] =
+			    (PACKET_BIT(1, 1) ? PACKET_BITS(7, 4, 32) : 0);
+
+			switch (sc->sc_tool_id[0]) {
+			case 0x802:
+				sc->sc_tool[0] = BTN_TOOL_PEN;
+				break;
+			case 0x80a:
+				sc->sc_tool[0] = BTN_TOOL_ERASER;
+				break;
+			default:
+				USB_DPRINTF_L1(PRINT_MASK_ALL,
+				    usbwcm_log_handle,
+				    "unknown tool ID %03x seen\n",
+				    sc->sc_tool_id[0]);
+				sc->sc_tool[0] = BTN_TOOL_PEN;
+			}
+			break;
+
+		/* In Proximity */
+		case 0x07:
+			uwacom_pen_events_dtu(usbwcmp,
+			    (PACKET_BITS(6,0,8) << 2) | PACKET_BITS(7,7,8),
+			    PACKET_BIT(1,1),
+			    PACKET_BIT(1,2)
+			);
+
+			uwacom_pos_events_dtu(usbwcmp,
+			    (PACKET_BITS(2,0,8) << 8) | PACKET_BITS(3,0,8),
+			    (PACKET_BITS(4,0,8) << 8) | PACKET_BITS(5,0,8)
+			);
+
+			uwacom_tool_events_dtu(usbwcmp,0,1);
+			break;
+
+		/* Not in prox */
+		case 0x04:
+			uwacom_pos_events_dtu(usbwcmp, 0, 0);
+
+			uwacom_pen_events_dtu(usbwcmp, 0, 0, 0);
+
+			sc->sc_tool_id[0] = 0;
+			uwacom_tool_events_dtu(usbwcmp, 0, 0);
+			break;
+		}
+
+	case 0x0c:
+		uwacom_pad_events_dtu_b(usbwcmp, mp);
+		break;
+
+	default:
+		USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+		    "unknown report type %02x received\n",
+		    PACKET_BITS(0, 0, 8));
+		break;
+	}
+}
+
+static void
 uwacom_init_abs(usbwcm_state_t *usbwcmp, int axis, int32_t min, int32_t max,
     int32_t fuzz, int32_t flat)
 {
@@ -810,6 +913,26 @@ uwacom_init_intuos4_large(usbwcm_state_t *usbwcmp)
 	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_8);
 }
 
+static void
+uwacom_init_dtu_b(usbwcm_state_t *usbwcmp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_0);
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_1);
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_2);
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_3);
+	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_4);
+
+	if (sc->sc_id.product == USB_PRODUCT_WACOM_DTH_2242_PEN) {
+		BM_SET_BIT(sc->sc_bm[1], BTN_MISC_5);
+	}
+
+	sc->sc_tool[1] = BTN_TOOL_PAD;
+	sc->sc_tool_id[1] = TOOL_ID_PAD;
+	sc->sc_serial[1] = SERIAL_PAD_INTUOS;
+}
+
 static int
 uwacom_init(usbwcm_state_t *usbwcmp)
 {
@@ -877,6 +1000,9 @@ uwacom_init(usbwcm_state_t *usbwcmp)
 		case INTUOS4S:
 			uwacom_init_intuos4(usbwcmp);
 			uwacom_init_intuos(usbwcmp);
+			break;
+		case DTU_B:
+			uwacom_init_dtu_b(usbwcmp);
 			break;
 		case MYOFFICE:
 			uwacom_init_myoffice(usbwcmp);
@@ -1476,6 +1602,10 @@ usbwcm_input(usbwcm_state_t *usbwcmp, mblk_t *mp)
 
 	case DTU:
 		usbwcm_input_dtu(usbwcmp, mp);
+		break;
+
+	case DTU_B:
+		usbwcm_input_dtu_b(usbwcmp, mp);
 		break;
 	}
 }

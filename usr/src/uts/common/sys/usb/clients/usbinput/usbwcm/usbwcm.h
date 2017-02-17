@@ -219,6 +219,9 @@ struct event_input {
 #define	USB_PRODUCT_WACOM_INTUOS4_8X13		0x00ba
 #define	USB_PRODUCT_WACOM_INTUOS4_12X19		0x00bb
 
+#define	USB_PRODUCT_WACOM_DTK_2241		0x0057
+#define	USB_PRODUCT_WACOM_DTH_2242_PEN		0x0059
+
 #define	USB_PRODUCT_WACOM_CINTIQ_21UX2		0x00cc
 #define	USB_PRODUCT_WACOM_DTU_2231		0x00ce
 
@@ -256,7 +259,8 @@ enum uwacom_protocol {
 	CINTIQUX2,
 
 	/* DTU family */
-	DTU
+	DTU,
+	DTU_B
 };
 
 struct uwacom_id {
@@ -283,7 +287,8 @@ static const struct uwacom_protocol_type uwacom_protocols[] = {
 	{10, 63},
 	{10, 63},
 	{10, 63},
-	{ 8, 63}
+	{ 8, 63},
+	{10, 63}
 };
 
 struct uwacom_softc {
@@ -450,6 +455,14 @@ static const struct uwacom_type uwacom_devs[] = {
 	{
 		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_INTUOS4_12X19},
 		INTUOS4L, 97536, 60960, 2047
+	},
+	{
+		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_DTK_2241},
+		DTU_B, 47920, 27130, 1024
+	},
+	{
+		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_DTH_2242_PEN},
+		DTU_B, 47920, 27130, 1024
 	},
 	{
 		{USB_VENDOR_WACOM, USB_PRODUCT_WACOM_DTU_2231},
