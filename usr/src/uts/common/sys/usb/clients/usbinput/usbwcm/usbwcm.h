@@ -1,5 +1,6 @@
 /*
  * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
  * Use is subject to license terms.
  */
 
