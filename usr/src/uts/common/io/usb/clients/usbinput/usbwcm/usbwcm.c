@@ -957,26 +957,48 @@ uwacom_init(usbwcm_state_t *usbwcmp)
 	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_REL);
 	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_ABS);
 
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TIP);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_X);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_Y);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_MISC);
+
+	uwacom_init_abs(usbwcmp, ABS_X, 0, sc->sc_type->x_max, 4, 0);
+	uwacom_init_abs(usbwcmp, ABS_Y, 0, sc->sc_type->y_max, 4, 0);
+
+	if (sc->sc_type->interface == TOUCHSCREEN) {
+		BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_MSC);
+		BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_DOUBLETAP);
+		BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_TRIPLETAP);
+		BM_SET_BIT(sc->sc_bm[EVT_MSC], MSC_SERIAL);
+
+		sc->sc_serial[0] = -1;
+		sc->sc_tool[0] = 0;
+		sc->sc_tool_id[0] = TOOL_ID_TOUCH;
+
+		sc->sc_serial[1] = -1;
+		sc->sc_tool[1] = 0;
+		sc->sc_tool_id[1] = TOOL_ID_TOUCH;
+	}
+
+	/* Touchscreens have been fully initialized */
+	if (sc->sc_type->interface != STYLUS)
+		return (0);
+
+
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_LEFT);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_RIGHT);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MIDDLE);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_PEN);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_ERASER);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_MOUSE);
-	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TIP);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_STYLUS_1);
 	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_STYLUS_2);
 
 	BM_SET_BIT(sc->sc_bm[EVT_REL], REL_WHEEL);
 
-	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_X);
-	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_Y);
 	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_PRESSURE);
 	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_DISTANCE);
-	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_MISC);
 
-	uwacom_init_abs(usbwcmp, ABS_X, 0, sc->sc_type->x_max, 4, 0);
-	uwacom_init_abs(usbwcmp, ABS_Y, 0, sc->sc_type->y_max, 4, 0);
 	uwacom_init_abs(usbwcmp, ABS_PRESSURE, 0, sc->sc_type->pressure_max,
 	    0, 0);
 	uwacom_init_abs(usbwcmp, ABS_DISTANCE, 0,
