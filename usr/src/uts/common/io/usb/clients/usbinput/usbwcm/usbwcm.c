@@ -803,11 +803,11 @@ uwacom_init_graphire4(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[0], EVT_MSC);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_0);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_4);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TOOL_PAD);
-	BM_SET_BIT(sc->sc_bm[4], MSC_SERIAL);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_MSC);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_0);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_4);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_PAD);
+	BM_SET_BIT(sc->sc_bm[EVT_MSC], MSC_SERIAL);
 
 	sc->sc_tool[1] = BTN_TOOL_PAD;
 	sc->sc_serial[1] = SERIAL_PAD_GRAPHIRE4;
@@ -818,9 +818,9 @@ uwacom_init_myoffice(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_1);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_5);
-	BM_SET_BIT(sc->sc_bm[3], ABS_WHEEL);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_1);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_5);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_WHEEL);
 
 	uwacom_init_abs(usbwcmp, ABS_WHEEL, 0, 71, 0, 0);
 }
@@ -830,20 +830,20 @@ uwacom_init_intuos(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[0], EVT_MSC);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_MSC);
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_0);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_1);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_2);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_3);
-	BM_SET_BIT(sc->sc_bm[1], BTN_SIDE);
-	BM_SET_BIT(sc->sc_bm[1], BTN_EXTRA);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TOOL_PAD);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_0);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_1);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_2);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_3);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_SIDE);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_EXTRA);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_PAD);
 
-	BM_SET_BIT(sc->sc_bm[3], ABS_TILT_X);
-	BM_SET_BIT(sc->sc_bm[3], ABS_TILT_Y);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_TILT_X);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_TILT_Y);
 
-	BM_SET_BIT(sc->sc_bm[4], MSC_SERIAL);
+	BM_SET_BIT(sc->sc_bm[EVT_MSC], MSC_SERIAL);
 
 	sc->sc_tool[1] = BTN_TOOL_PAD;
 	sc->sc_tool_id[1] = TOOL_ID_PAD;
@@ -855,8 +855,8 @@ uwacom_init_intuos3(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[3], ABS_Z);
-	BM_SET_BIT(sc->sc_bm[3], ABS_RX);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_Z);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_RX);
 
 	uwacom_init_abs(usbwcmp, ABS_Z, -900,  899, 0, 0);
 	uwacom_init_abs(usbwcmp, ABS_RX, 0, 4096, 0, 0);
@@ -867,12 +867,12 @@ uwacom_init_intuos3_large(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_4);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_5);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_6);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_7);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_4);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_5);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_6);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_7);
 
-	BM_SET_BIT(sc->sc_bm[3], ABS_RY);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_RY);
 
 	uwacom_init_abs(usbwcmp, ABS_RY, 0, 4096, 0, 0);
 }
@@ -882,11 +882,11 @@ uwacom_init_intuos4(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_4);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_5);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_6);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_4);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_5);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_6);
 
-	BM_SET_BIT(sc->sc_bm[3], ABS_Z);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_Z);
 
 	uwacom_init_abs(usbwcmp, ABS_Z, -900,  899, 0, 0);
 }
@@ -895,23 +895,23 @@ uwacom_init_cintiq21ux2(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_9);
-	BM_SET_BIT(sc->sc_bm[1], BTN_BASE);
-	BM_SET_BIT(sc->sc_bm[1], BTN_BASE2);
-	BM_SET_BIT(sc->sc_bm[1], BTN_A);
-	BM_SET_BIT(sc->sc_bm[1], BTN_B);
-	BM_SET_BIT(sc->sc_bm[1], BTN_C);
-	BM_SET_BIT(sc->sc_bm[1], BTN_X);
-	BM_SET_BIT(sc->sc_bm[1], BTN_Y);
-	BM_SET_BIT(sc->sc_bm[1], BTN_Z);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_9);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_BASE);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_BASE2);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_A);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_B);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_C);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_X);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_Y);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_Z);
 }
 static void
 uwacom_init_intuos4_large(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_7);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_8);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_7);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_8);
 }
 
 static void
@@ -919,14 +919,14 @@ uwacom_init_dtu_b(usbwcm_state_t *usbwcmp)
 {
 	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_0);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_1);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_2);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_3);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MISC_4);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_0);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_1);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_2);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_3);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_4);
 
 	if (sc->sc_id.product == USB_PRODUCT_WACOM_DTH_2242_PEN) {
-		BM_SET_BIT(sc->sc_bm[1], BTN_MISC_5);
+		BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MISC_5);
 	}
 
 	sc->sc_tool[1] = BTN_TOOL_PAD;
@@ -952,28 +952,28 @@ uwacom_init(usbwcm_state_t *usbwcmp)
 	sc->sc_abs = kmem_zalloc(ABS_USED * sizeof (struct event_abs_axis),
 	    KM_SLEEP);
 
-	BM_SET_BIT(sc->sc_bm[0], EVT_SYN);
-	BM_SET_BIT(sc->sc_bm[0], EVT_BTN);
-	BM_SET_BIT(sc->sc_bm[0], EVT_REL);
-	BM_SET_BIT(sc->sc_bm[0], EVT_ABS);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_SYN);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_BTN);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_REL);
+	BM_SET_BIT(sc->sc_bm[EVT_SYN], EVT_ABS);
 
-	BM_SET_BIT(sc->sc_bm[1], BTN_LEFT);
-	BM_SET_BIT(sc->sc_bm[1], BTN_RIGHT);
-	BM_SET_BIT(sc->sc_bm[1], BTN_MIDDLE);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TOOL_PEN);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TOOL_ERASER);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TOOL_MOUSE);
-	BM_SET_BIT(sc->sc_bm[1], BTN_TIP);
-	BM_SET_BIT(sc->sc_bm[1], BTN_STYLUS_1);
-	BM_SET_BIT(sc->sc_bm[1], BTN_STYLUS_2);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_LEFT);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_RIGHT);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_MIDDLE);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_PEN);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_ERASER);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TOOL_MOUSE);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_TIP);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_STYLUS_1);
+	BM_SET_BIT(sc->sc_bm[EVT_BTN], BTN_STYLUS_2);
 
-	BM_SET_BIT(sc->sc_bm[2], REL_WHEEL);
+	BM_SET_BIT(sc->sc_bm[EVT_REL], REL_WHEEL);
 
-	BM_SET_BIT(sc->sc_bm[3], ABS_X);
-	BM_SET_BIT(sc->sc_bm[3], ABS_Y);
-	BM_SET_BIT(sc->sc_bm[3], ABS_PRESSURE);
-	BM_SET_BIT(sc->sc_bm[3], ABS_DISTANCE);
-	BM_SET_BIT(sc->sc_bm[3], ABS_MISC);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_X);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_Y);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_PRESSURE);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_DISTANCE);
+	BM_SET_BIT(sc->sc_bm[EVT_ABS], ABS_MISC);
 
 	uwacom_init_abs(usbwcmp, ABS_X, 0, sc->sc_type->x_max, 4, 0);
 	uwacom_init_abs(usbwcmp, ABS_Y, 0, sc->sc_type->y_max, 4, 0);
