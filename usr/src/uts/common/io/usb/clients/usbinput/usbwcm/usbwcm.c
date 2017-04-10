@@ -683,6 +683,112 @@ usbwcm_input_dtu(usbwcm_state_t *usbwcmp, mblk_t *mp)
 	}
 }
 
+static int
+uwacom_touch_slot(usbwcm_state_t *usbwcmp, int id)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+
+	/* Find a slot with matching contact ID (serial) */
+	if (sc->sc_serial[0] == id)
+		return 0;
+	if (sc->sc_serial[1] == id)
+		return 1;
+
+	/* Find an empty slot and set the tool */
+	if (sc->sc_tool[0] == 0) {
+		if (sc->sc_tool[1] == 0)
+			sc->sc_tool[0] = BTN_TOOL_DOUBLETAP;
+		else
+			sc->sc_tool[0] = BTN_TOOL_TRIPLETAP;
+		sc->sc_serial[0] = id;
+		return 0;
+	}
+	if (sc->sc_tool[1] == 0) {
+		if (sc->sc_tool[0] == 0)
+			sc->sc_tool[1] = BTN_TOOL_DOUBLETAP;
+		else
+			sc->sc_tool[1] = BTN_TOOL_TRIPLETAP;
+		sc->sc_serial[1] = id;
+		return 1;
+	}
+
+	/* All slots are full */
+	return -1;
+}
+
+static void
+uwacom_touch_events(usbwcm_state_t *usbwcmp, int id, int range, int tip,
+    int x, int y)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+	int i;
+
+	i = uwacom_touch_slot(usbwcmp, id);
+	if (i < 0)
+		return;
+
+	/* HACK: Force first finger to only have even x/y; 2nd to only have odd  */
+	x = ((x >> 1) << 1) + i;
+	y = ((y >> 1) << 1) + i;
+
+	uwacom_event(usbwcmp, EVT_ABS, ABS_X, x);
+	uwacom_event(usbwcmp, EVT_ABS, ABS_Y, y);
+	uwacom_event(usbwcmp, EVT_ABS, ABS_MISC, range ? sc->sc_tool_id[i] : 0);
+	uwacom_event(usbwcmp, EVT_BTN, sc->sc_tool[i], range ? 1 : 0);
+	if (sc->sc_tool[i] == BTN_TOOL_DOUBLETAP)
+		uwacom_event(usbwcmp, EVT_BTN, BTN_TIP, range);
+	uwacom_event(usbwcmp, EVT_MSC, MSC_SERIAL, i+1);
+	uwacom_event(usbwcmp, EVT_SYN, SYN_REPORT, 0);
+
+	/* Immediately clear the serial number so that the slot can be 
+	 * eventually reused, but have the caller clear the tools only
+	 * after all fingers have been processed.
+	 */
+	if (!range) {
+		sc->sc_serial[i] = -1;
+	}
+}
+
+static void
+uwacom_touch_events_dtu_b(usbwcm_state_t *usbwcmp, mblk_t *mp)
+{
+	struct uwacom_softc *sc = &usbwcmp->usbwcm_softc;
+	uint8_t *packet = mp->b_rptr;
+	int i, total;
+
+	static int remain = -1;
+
+	if (PACKET_BITS(0, 0, 8) != 0x01) {
+		USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+		    "unknown report type %02x received\n",
+		    PACKET_BITS(0, 0, 8));
+	}
+
+	total = PACKET_BITS(61, 0, 8);
+	if (total != 0)
+		remain = total;
+
+	for (i = 0; i < 4 && remain > 0; i++, remain--) {
+		int offset = (14 * i) + 1;
+		int id, range, tip, x, y;
+
+		tip = PACKET_BIT(offset, 0);
+		range = PACKET_BIT(offset, 1);
+		id = PACKET_BITS(offset + 1, 0, 8);
+		x = PACKET_BITS(offset + 6, 0, 16);
+		y = PACKET_BITS(offset + 8, 0, 16);
+
+		uwacom_touch_events(usbwcmp, id, range, tip, x, y);
+	}
+
+	if (remain == 0) {
+		if (sc->sc_serial[0] == -1)
+			sc->sc_tool[0] = 0;
+		if (sc->sc_serial[1] == -1)
+			sc->sc_tool[1] = 0;
+	}
+}
+
 static void
 uwacom_pad_events_dtu_b(usbwcm_state_t *usbwcmp, mblk_t *mp)
 {
@@ -1112,6 +1218,13 @@ usbwcm_probe(usbwcm_state_t *usbwcmp)
 	featr->hid_req_wLength = sizeof (uint8_t) * 2;
 	featr->hid_req_data[0] = 2;
 	featr->hid_req_data[1] = 2;
+
+	if (usbwcmp->usbwcm_devid.ProductId == USB_PRODUCT_WACOM_DTH_2242_TOUCH) {
+		featr->hid_req_wValue = REPORT_TYPE_FEATURE | 3;
+		featr->hid_req_wLength = sizeof (uint8_t) * 3;
+		featr->hid_req_data[0] = 3;
+		featr->hid_req_data[1] = 2;
+	}
 
 	mctlmsg.ioc_cmd = HID_SET_REPORT;
 	mctlmsg.ioc_count = sizeof (featr);
@@ -1630,6 +1743,10 @@ usbwcm_input(usbwcm_state_t *usbwcmp, mblk_t *mp)
 	case DTU_B:
 		usbwcm_input_dtu_b(usbwcmp, mp);
 		break;
+
+	case DTU_B_TOUCH:
+		uwacom_touch_events_dtu_b(usbwcmp, mp);
+		break;
 	}
 }
 
@@ -1687,6 +1804,13 @@ usbwcm_mctl(queue_t *q, mblk_t *mp)
 		featr->hid_req_wLength = sizeof (uint8_t) * 2;
 		featr->hid_req_data[0] = 2;
 		featr->hid_req_data[1] = 2;
+
+		if (usbwcmp->usbwcm_devid.ProductId == USB_PRODUCT_WACOM_DTH_2242_TOUCH) {
+			featr->hid_req_wValue = REPORT_TYPE_FEATURE | 3;
+			featr->hid_req_wLength = sizeof (uint8_t) * 3;
+			featr->hid_req_data[0] = 3;
+			featr->hid_req_data[1] = 2;
+		}
 
 		mctlmsg.ioc_cmd = HID_SET_REPORT;
 		mctlmsg.ioc_count = sizeof (featr);
