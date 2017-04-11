@@ -134,6 +134,16 @@ To remove the module, simply run `gmake uninstall` and reboot.
     $ su root -c reboot
 
 
+## Packaging ##
+
+The "package" make target generates a Solaris package suitable for
+distribution. The `PKGVERSION` variable defines what version number
+the package should receive. This must be explicitly defined unless
+usbwcm was cloned from git and the `git` command is available.
+
+    $ gmake package PKGVERSION=<version>
+
+
 # Development  ########################################################
 
 The linuxwacom project maintains a git repository which is used for
