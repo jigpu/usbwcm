@@ -731,6 +731,11 @@ uwacom_touch_events(usbwcm_state_t *usbwcmp, int id, int range, int tip,
 	x = ((x >> 1) << 1) + i;
 	y = ((y >> 1) << 1) + i;
 
+        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+            "id: %d, range: %d, tip: %d, x: %d, y: %d\n", id, range, tip, x, y);
+        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+            "i: %d, sc_serial[i]: %d, sc_tool[i]: %d, sc_tool_id[i]: %d\n", i, sc->sc_serial[i], sc->sc_tool[i], sc->sc_tool_id[i]);
+
 	uwacom_event(usbwcmp, EVT_ABS, ABS_X, x);
 	uwacom_event(usbwcmp, EVT_ABS, ABS_Y, y);
 	uwacom_event(usbwcmp, EVT_ABS, ABS_MISC, range ? sc->sc_tool_id[i] : 0);
@@ -1220,6 +1225,8 @@ usbwcm_probe(usbwcm_state_t *usbwcmp)
 	featr->hid_req_data[1] = 2;
 
 	if (usbwcmp->usbwcm_devid.ProductId == USB_PRODUCT_WACOM_DTH_2242_TOUCH) {
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "using special init for 2242_TOUCH (PROBE)\n");
 		featr->hid_req_wValue = REPORT_TYPE_FEATURE | 3;
 		featr->hid_req_wLength = sizeof (uint8_t) * 3;
 		featr->hid_req_data[0] = 3;
@@ -1720,6 +1727,9 @@ usbwcm_input(usbwcm_state_t *usbwcmp, mblk_t *mp)
 {
 	struct uwacom_softc	*sc = &usbwcmp->usbwcm_softc;
 
+        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+            "entered usbwcm_input\n");
+
 	switch (sc->sc_type->protocol) {
 	case GRAPHIRE:
 	case GRAPHIRE4:
@@ -1806,6 +1816,8 @@ usbwcm_mctl(queue_t *q, mblk_t *mp)
 		featr->hid_req_data[1] = 2;
 
 		if (usbwcmp->usbwcm_devid.ProductId == USB_PRODUCT_WACOM_DTH_2242_TOUCH) {
+			USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+			    "using special init for 2242_TOUCH (HID_CONNECT_EVENT)\n");
 			featr->hid_req_wValue = REPORT_TYPE_FEATURE | 3;
 			featr->hid_req_wLength = sizeof (uint8_t) * 3;
 			featr->hid_req_data[0] = 3;
@@ -1857,6 +1869,9 @@ usbwcm_open(queue_t *q, dev_t *devp, int flag, int sflag, cred_t *credp)
 		return (0);
 	}
 
+        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+            "opened usbwcm module 0010\n");
+
 	/* allocate usbwcm state structure */
 	usbwcmp = kmem_zalloc(sizeof (usbwcm_state_t), KM_SLEEP);
 
@@ -1893,6 +1908,9 @@ usbwcm_close(queue_t *q, int flag, cred_t *credp)
 {
 	usbwcm_state_t		*usbwcmp = q->q_ptr;
 	struct uwacom_softc	*sc = &usbwcmp->usbwcm_softc;
+
+        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+            "closing usbwcm module\n");
 
 	qprocsoff(q);
 
@@ -1977,6 +1995,8 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 
 	switch (mp->b_datap->db_type) {
 	case M_FLUSH:
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput M_FLUSH\n");
 		if (*mp->b_rptr & FLUSHW)
 			flushq(WR(q), FLUSHDATA);
 
@@ -1991,11 +2011,17 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 		 * We don't have to handle this
 		 * because nothing is sent from the downstream
 		 */
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput M_BREAK\n");
 		freemsg(mp);
 		return;
 
 	case M_DATA:
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput M_DATA\n");
 		if (!(usbwcmp->usbwcm_flags & USBWCM_OPEN)) {
+                        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                            "rput M_DATA not ready\n");
 			freemsg(mp);	/* not ready to listen */
 
 			return;
@@ -2006,6 +2032,8 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 		 */
 		limit = uwacom_protocols[sc->sc_type->protocol].packet_size;
 		if (MBLKL(mp0) == limit) {	/* REMOVE */
+                        USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                            "rput M_DATA limit = %d\n", limit);
 			do {
 				/* REMOVE */
 				usbwcm_input(usbwcmp, mp0);
@@ -2017,16 +2045,22 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 		break;
 
 	case M_CTL:
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput M_CTL\n");
 		usbwcm_mctl(q, mp);
 		return;
 
 	case M_ERROR:
 		/* REMOVE */
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput M_ERROR\n");
 		usbwcmp->usbwcm_flags &= ~USBWCM_QWAIT;
 
 		freemsg(mp);
 		return;
 	default:
+                USB_DPRINTF_L1(PRINT_MASK_ALL, usbwcm_log_handle,
+                    "rput DEFAULT\n");
 		putnext(q, mp);
 		return;
 	}
